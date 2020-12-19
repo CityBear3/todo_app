@@ -1,14 +1,14 @@
-
-
-
-
 use actix_web::{get, http::header, post, web, App, HttpResponse, HttpServer, ResponseError};
-use thiserror::Error;
+//use thiserror::Error;
 use askama::Template;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::params;
 use serde::Deserialize;
+use actix_web::middleware::Logger;
+
+mod error;
+use error::Myerror;
 
 struct TodoEntry {
     id: u32,
@@ -21,6 +21,7 @@ struct IndexTemplate {
     entries: Vec<TodoEntry>,
 }
 
+/*
 #[derive(Error, Debug)]
 enum Myerror {
     #[error("Failed to render HTML")]
@@ -32,6 +33,7 @@ enum Myerror {
     #[error("Faild SQL execution")]
     SQLiteError(#[from] rusqlite::Error),
 }
+*/
 
 #[derive(Deserialize)]
 struct AddParams {
@@ -69,6 +71,18 @@ async fn delete_todo(
         .finish())        
 }
 
+#[post("/reset")]
+async fn reset_todo(
+    db: web::Data<r2d2::Pool<SqliteConnectionManager>>
+) -> Result<HttpResponse, Myerror> {
+    let conn = db.get()?;
+    conn.execute("DELETE FROM todo ", params![]).expect("Faild delete all data");
+    conn.execute("DELETE FROM sqlite_sequence WHERE name='todo'", params![]).expect("Faild delete autoincrement");
+    Ok(HttpResponse::SeeOther()
+        .header(header::LOCATION, "/")
+        .finish())
+}
+
 #[get("/")]
 async fn index(db: web::Data<Pool<SqliteConnectionManager>>) -> Result<HttpResponse, Myerror> {
     let conn = db.get()?;
@@ -76,7 +90,7 @@ async fn index(db: web::Data<Pool<SqliteConnectionManager>>) -> Result<HttpRespo
     let rows = statement.query_map(params![], |row| {
         let id = row.get(0)?;
         let text = row.get(1)?;
-        Ok(TodoEntry {id, text })
+        Ok(TodoEntry { id, text })
     })?;
 
     let mut entries = Vec::new();
@@ -107,12 +121,18 @@ async fn main() -> Result<(), actix_web::Error> {
         params![],
     )
     .expect("Faild to create a table `todo`.");
+
+    std::env::set_var("RUST_LOG", "actix_web=info");
+    env_logger::init();
+
     HttpServer::new(move || {
         App::new()
             .service(index)
             .service(add_todo)
             .service(delete_todo)
+            .service(reset_todo)
             .data(pool.clone())
+            .wrap(Logger::default())
     })
         .bind("localhost:8080")?
         .run()

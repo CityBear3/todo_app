@@ -15,3 +15,5 @@ rusqlite = { version = "0.24", features=["bundled"] }
 r2d2 = "0.8.9"
 r2d2_sqlite = "0.17.0"
 serde = { version = "1.0", features = ["derive"] }
+chrono = "0.4.19"
+env_logger = "0.8.2"
