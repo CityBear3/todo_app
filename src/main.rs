@@ -21,20 +21,6 @@ struct IndexTemplate {
     entries: Vec<TodoEntry>,
 }
 
-/*
-#[derive(Error, Debug)]
-enum Myerror {
-    #[error("Failed to render HTML")]
-    AskamaError(#[from] askama::Error),
-
-    #[error("Faild to get connection")]
-    ConnectionPoolError(#[from] r2d2::Error),
-
-    #[error("Faild SQL execution")]
-    SQLiteError(#[from] rusqlite::Error),
-}
-*/
-
 #[derive(Deserialize)]
 struct AddParams {
     text: String,
