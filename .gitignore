@@ -1,4 +1,4 @@
 /target
 ./todo.db
 ./localhost-key.pem
-./localhost.key.pem
+./localhost.pem
