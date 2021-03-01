@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 actix-rt = "1.1.1"
-actix-web = "3.3.2"
+actix-web = { version = "3.3.2", features = ["openssl] }
 askama = "0.10.5"
 thiserror = "1.0.22"
 rusqlite = { version = "0.24", features=["bundled"] }
