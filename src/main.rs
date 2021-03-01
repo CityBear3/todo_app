@@ -1,11 +1,11 @@
 use actix_web::{get, http::header, post, web, App, HttpResponse, HttpServer, ResponseError};
 //use thiserror::Error;
+use actix_web::middleware::Logger;
 use askama::Template;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::params;
 use serde::Deserialize;
-use actix_web::middleware::Logger;
 
 mod error;
 use error::Myerror;
@@ -54,16 +54,18 @@ async fn delete_todo(
     conn.execute("DELETE FROM todo WHERE id=?", &[&params.id])?;
     Ok(HttpResponse::SeeOther()
         .header(header::LOCATION, "/")
-        .finish())        
+        .finish())
 }
 
 #[post("/reset")]
 async fn reset_todo(
-    db: web::Data<r2d2::Pool<SqliteConnectionManager>>
+    db: web::Data<r2d2::Pool<SqliteConnectionManager>>,
 ) -> Result<HttpResponse, Myerror> {
     let conn = db.get()?;
-    conn.execute("DELETE FROM todo ", params![]).expect("Faild delete all data");
-    conn.execute("DELETE FROM sqlite_sequence WHERE name='todo'", params![]).expect("Faild delete autoincrement");
+    conn.execute("DELETE FROM todo ", params![])
+        .expect("Faild delete all data");
+    conn.execute("DELETE FROM sqlite_sequence WHERE name='todo'", params![])
+        .expect("Faild delete autoincrement");
     Ok(HttpResponse::SeeOther()
         .header(header::LOCATION, "/")
         .finish())
@@ -88,17 +90,13 @@ async fn index(db: web::Data<Pool<SqliteConnectionManager>>) -> Result<HttpRespo
     Ok(HttpResponse::Ok()
         .content_type("text/html")
         .body(response_body))
-    
 }
-
 
 #[actix_rt::main]
 async fn main() -> Result<(), actix_web::Error> {
     let manager = SqliteConnectionManager::file("todo.db");
     let pool = Pool::new(manager).expect("Faild to initialize the connection pool.");
-    let conn = pool
-        .get()
-        .expect("Faild to get the connection pool.");
+    let conn = pool.get().expect("Faild to get the connection pool.");
     conn.execute(
         "CREATE TABLE IF NOT EXISTS todo (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,9 +118,8 @@ async fn main() -> Result<(), actix_web::Error> {
             .data(pool.clone())
             .wrap(Logger::default())
     })
-        .bind("localhost:8080")?
-        .run()
-        .await?;
+    .bind("localhost:8080")?
+    .run()
+    .await?;
     Ok(())
 }
-
