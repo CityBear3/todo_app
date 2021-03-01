@@ -2,6 +2,7 @@ use actix_web::{get, http::header, post, web, App, HttpResponse, HttpServer, Res
 //use thiserror::Error;
 use actix_web::middleware::Logger;
 use askama::Template;
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::params;
@@ -109,6 +110,16 @@ async fn main() -> Result<(), actix_web::Error> {
     std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
 
+    let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
+
+    builder
+        .set_private_key_file("localhost-key.pem", SslFiletype::PEM)
+        .unwrap();
+
+    builder
+        .set_certificate_chain_file("localhost.pem")
+        .unwrap();
+
     HttpServer::new(move || {
         App::new()
             .service(index)
@@ -118,7 +129,7 @@ async fn main() -> Result<(), actix_web::Error> {
             .data(pool.clone())
             .wrap(Logger::default())
     })
-    .bind("localhost:8080")?
+    .bind_openssl("localhost:7878", builder)?
     .run()
     .await?;
     Ok(())
