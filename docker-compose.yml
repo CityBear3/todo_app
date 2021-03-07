@@ -1,0 +1,8 @@
+version: '3.6'
+
+services:
+  todo:
+    build: ./Docker
+    ports:
+      - 7878:7878
+    tty: true
